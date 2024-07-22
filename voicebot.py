@@ -49,8 +49,8 @@ def ask_gpt(prompt, model):
         response = client.chat.completions.create(
             model=model, 
             messages=prompt
-    )
-    return response.choices[0].message.content
+        )
+        return response.choices[0].message.content
     except Exception as e:
         logging.error(f"GPT 오류 발생: {e}")
         st.error(f"GPT 응답 생성 중 오류가 발생했습니다. 다시 시도해주세요.")
