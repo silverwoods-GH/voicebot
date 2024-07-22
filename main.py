@@ -3,43 +3,14 @@ import os
 import logging
 from audiorecorder import audiorecorder
 from datetime import datetime
-import base64
 import stt
 import tts
 import chat
+import audio
+import display
 
 # 로깅 설정
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-
-##### 기능 구현 함수 #####
-
-def play_audio(filename):
-	try:
-		with open(filename, "rb") as f:
-			data = f.read()
-			b64 = base64.b64encode(data).decode()
-			md = f"""
-				<audio controls>
-				<source src="data:audio/mp3;base64,{b64}" type="audio/mp3">
-				</audio>
-				"""
-			st.markdown(md, unsafe_allow_html=True)
-	except Exception as e:
-		logging.error(f"오디오 재생 오류 발생: {e}")
-		st.error(f"오디오 재생 중 오류가 발생했습니다. 다시 시도해주세요.")
-
-def display_chat():
-	for sender, time, message in st.session_state["chat"]:
-		if sender == "user":
-			st.write(
-				f'<div style="display:flex;align-items:center;"><div style="background-color:#007AFF;color:white;border-radius:12px;padding:8px 12px;margin-right:8px;">{message}</div><div style="font-size:0.8rem;color:gray;">{time}</div></div>',
-				unsafe_allow_html=True
-			)
-		else:
-			st.write(
-				f'<div style="display:flex;align-items:center;justify-content:flex-end;"><div style="background-color:lightgray;border-radius:12px;padding:8px 12px;margin-left:8px;">{message}</div><div style="font-size:0.8rem;color:gray;">{time}</div></div>',
-				unsafe_allow_html=True
-			)
 
 ##### 메인 함수 #####
 
@@ -82,30 +53,30 @@ def main():
 	col1, col2 = st.columns(2)
 	with col1:
 		st.subheader("질문하기")
-		audio = audiorecorder()
-		if (audio.duration_seconds > 0) and (st.session_state["check_reset"] == False):
-			st.audio(audio.export().read())
-			question = stt.STT(audio)
+		audio_input = audiorecorder()
+		if (audio_input.duration_seconds > 0) and (st.session_state["check_reset"] == False):
+			st.audio(audio_input.export().read())
+			question = stt.STT(audio_input)
 			now = datetime.now().strftime("%H:%M")
 			st.session_state["chat"].append(("user", now, question))
 			st.session_state["messages"].append({"role": "user", "content": question})
 
 	with col2:
 		st.subheader("질문/답변")
-		if (audio.duration_seconds > 0) and (st.session_state["check_reset"] == False):
+		if (audio_input.duration_seconds > 0) and (st.session_state["check_reset"] == False):
 			response = chat.ask_gpt(st.session_state["messages"], model)
 			st.session_state["messages"].append({"role": "assistant", "content": response})
 			now = datetime.now().strftime("%H:%M")
 			st.session_state["chat"].append(("bot", now, response))
 
-			display_chat()
+			display.display_chat()
 
 			st.session_state["audio_file"] = tts.TTS(response)
 			if st.session_state["audio_file"]:
-				play_audio(st.session_state["audio_file"])
+				audio.play_audio(st.session_state["audio_file"])
 
 				if st.button("다시 듣기"):
-					play_audio(st.session_state["audio_file"])
+					audio.play_audio(st.session_state["audio_file"])
 				if st.button("파일 삭제"):
 					if os.path.exists(st.session_state["audio_file"]):
 						os.remove(st.session_state["audio_file"])
