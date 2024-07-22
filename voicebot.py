@@ -21,11 +21,11 @@ client = openai.OpenAI(api_key=api_key)
 
 ##### 기능 구현 함수 #####
 @st.cache_data(ttl=3600)  # 1시간 동안 캐시 유지
-def STT(audio_data):
+def STT(audio):
     try:
         # 고유한 파일 이름 생성
         temp_filename = f"{uuid.uuid4()}.mp3"
-        audio_data.export(temp_filename, format="mp3")
+        audio.export(temp_filename, format="mp3")
 
         # OpenAI API를 사용하여 음성을 텍스트로 변환
         with open(temp_filename, "rb") as audio_file:
@@ -149,9 +149,8 @@ def main():
         st.subheader("질문하기")
         audio = audiorecorder()
         if (audio.duration_seconds > 0) and (st.session_state["check_reset"]==False):
-            audio_data = audio.export().read()
-            st.audio(audio_data)
-            question = STT(audio_data)
+            st.audio(audio.export().read())
+            question = STT(audio)
             now = datetime.now().strftime("%H:%M")
             st.session_state["chat"].append(("user", now, question))
             st.session_state["messages"].append({"role": "user", "content": question})
