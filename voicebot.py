@@ -7,7 +7,6 @@ import base64
 import tempfile
 import uuid
 import logging
-from gtts import gTTS
 
 # 로깅 설정
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -20,7 +19,6 @@ else:
     openai.api_key = api_key
 
 ##### 기능 구현 함수 #####
-@st.cache_data(ttl=3600, show_spinner=False)
 def transcribe_audio(temp_filename):
     with open(temp_filename, "rb") as audio_file:
         transcription = openai.Audio.transcribe(
@@ -41,28 +39,27 @@ def STT(audio):
         st.error(f"음성 인식 중 오류가 발생했습니다. 다시 시도해주세요.<br>{e}")
         return ""
 
-@st.cache_data(ttl=3600, show_spinner=False)
-def ask_gpt_cached(messages, model):
-    response = openai.ChatCompletion.create(
-        model=model,
-        messages=messages
-    )
-    return response.choices[0].message["content"]
-
 def ask_gpt(prompt, model):
     try:
-        response = ask_gpt_cached(prompt, model)
-        return response
+        response = openai.ChatCompletion.create(
+            model=model,
+            messages=prompt
+        )
+        return response.choices[0].message["content"]
     except Exception as e:
         logging.error(f"GPT 오류 발생: {e}")
         st.error(f"GPT 응답 생성 중 오류가 발생했습니다. 다시 시도해주세요.")
         return ""
 
-@st.cache_data(ttl=3600, show_spinner=False)
 def synthesize_speech(text):
-    tts = gTTS(text=text, lang='ko')
+    response = openai.Audio.create(
+        model="davinci-codex",  # 이 모델명은 실제로 사용 가능한 TTS 모델로 변경해야 함
+        input=text,
+        voice="voice_name"  # 사용할 목소리 이름으로 변경해야 함
+    )
     temp_filename = f"{uuid.uuid4()}.mp3"
-    tts.save(temp_filename)
+    with open(temp_filename, "wb") as f:
+        f.write(response["audio_content"])
     return temp_filename
 
 def TTS(text):
@@ -109,7 +106,7 @@ def main():
         - 음성 번역 챗봇 프로그램의 UI는 스트림릿을 활용합니다.
         - STT(Speech-To-Text)는 OpenAI의 Whisper를 활용합니다. 
         - 답변은 OpenAI의 GPT 모델을 활용합니다. 
-        - TTS(Text-To-Speech)는 gTTS를 활용합니다.
+        - TTS(Text-To-Speech)는 OpenAI의 TTS를 활용합니다.
         """)
 
     system_content = "You are a thoughtful assistant. Respond to all input in 25 words and answer in korean"
@@ -148,7 +145,7 @@ def main():
     with col2:
         st.subheader("질문/답변")
         if (audio.duration_seconds > 0) and (st.session_state["check_reset"] == False):
-            response = ask_gpt(tuple(st.session_state["messages"]), model)
+            response = ask_gpt(st.session_state["messages"], model)
             st.session_state["messages"].append({"role": "assistant", "content": response})
             now = datetime.now().strftime("%H:%M")
             st.session_state["chat"].append(("bot", now, response))
