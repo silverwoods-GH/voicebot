@@ -49,7 +49,7 @@ def ask_gpt(messages, model):
 			model=model,
 			messages=messages
 		)
-		return response.choices[0].message["content"]
+		return response.choices[0].message.content
 	except Exception as e:
 		logging.error(f"GPT 오류 발생: {e}")
 		st.error(f"GPT 응답 생성 중 오류가 발생했습니다. 다시 시도해주세요.")
@@ -63,8 +63,7 @@ def synthesize_speech(text):
 			input=text
 		)
 		temp_filename = f"{uuid.uuid4()}.mp3"
-		with open(temp_filename, "wb") as f:
-			f.write(response["audio_content"])
+		response.stream_to_file(temp_filename)
 		return temp_filename
 	except Exception as e:
 		logging.error(f"TTS 오류 발생: {e}")
