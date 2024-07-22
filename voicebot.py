@@ -25,7 +25,7 @@ def STT(audio_data):
     try:
         # 고유한 파일 이름 생성
         temp_filename = f"{uuid.uuid4()}.mp3"
-        speech.export(temp_filename, format="mp3")
+        audio_data.export(temp_filename, format="mp3")
 
         # OpenAI API를 사용하여 음성을 텍스트로 변환
         with open(temp_filename, "rb") as audio_file:
