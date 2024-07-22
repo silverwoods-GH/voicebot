@@ -21,7 +21,7 @@ else:
 ##### 기능 구현 함수 #####
 def transcribe_audio(temp_filename):
     with open(temp_filename, "rb") as audio_file:
-        transcription = openai.Audio.transcribe(
+        transcription = openai.Audio.transcriptions.create(
             model="whisper-1",
             file=audio_file
         )
@@ -39,11 +39,11 @@ def STT(audio):
         st.error(f"음성 인식 중 오류가 발생했습니다. 다시 시도해주세요.<br>{e}")
         return ""
 
-def ask_gpt(prompt, model):
+def ask_gpt(messages, model):
     try:
         response = openai.ChatCompletion.create(
             model=model,
-            messages=prompt
+            messages=messages
         )
         return response.choices[0].message["content"]
     except Exception as e:
@@ -52,10 +52,9 @@ def ask_gpt(prompt, model):
         return ""
 
 def synthesize_speech(text):
-    response = openai.Audio.create(
-        model="davinci-codex",  # 이 모델명은 실제로 사용 가능한 TTS 모델로 변경해야 함
-        input=text,
-        voice="voice_name"  # 사용할 목소리 이름으로 변경해야 함
+    response = openai.Audio.synthesize(
+        model="text-to-speech-001",  # 실제 사용할 TTS 모델로 변경
+        input={"text": text}
     )
     temp_filename = f"{uuid.uuid4()}.mp3"
     with open(temp_filename, "wb") as f:
