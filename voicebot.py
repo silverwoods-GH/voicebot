@@ -36,7 +36,7 @@ def STT(audio_data):
         return transcription["text"]
     except Exception as e:
         logging.error(f"STT 오류 발생: {e}")
-        st.error(f"음성 인식 중 오류가 발생했습니다. 다시 시도해주세요.")
+        st.error(f"음성 인식 중 오류가 발생했습니다. 다시 시도해주세요.\n{e}")
         return ""
 
 @st.cache_data(ttl=3600)
