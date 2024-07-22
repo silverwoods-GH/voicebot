@@ -1,13 +1,9 @@
 import streamlit as st
-
 import openai
 import os
-
 from audiorecorder import audiorecorder
-
 from datetime import datetime
 import base64
-
 import tempfile
 import uuid
 import logging
@@ -20,7 +16,6 @@ api_key = os.getenv('OPENAI_API_KEY')
 client = openai.OpenAI(api_key=api_key)
 
 ##### 기능 구현 함수 #####
-@st.cache_data(ttl=3600)  # 1시간 동안 캐시 유지
 def STT(audio):
     try:
         # 고유한 파일 이름 생성
@@ -30,9 +25,9 @@ def STT(audio):
         # OpenAI API를 사용하여 음성을 텍스트로 변환
         with open(temp_filename, "rb") as audio_file:
             transcription = client.audio.transcriptions.create(
-            model="whisper-1", 
-            file=audio_file
-        )
+                model="whisper-1", 
+                file=audio_file
+            )
 
         # 임시 파일 삭제
         os.remove(temp_filename)
@@ -42,7 +37,6 @@ def STT(audio):
         st.error(f"음성 인식 중 오류가 발생했습니다. 다시 시도해주세요.<br>{e}")
         return ""
 
-@st.cache_data(ttl=3600)
 def ask_gpt(prompt, model):
     try:
         # OpenAI API를 사용하여 GPT 모델로부터 응답 생성
@@ -56,7 +50,6 @@ def ask_gpt(prompt, model):
         st.error(f"GPT 응답 생성 중 오류가 발생했습니다. 다시 시도해주세요.")
         return ""
 
-@st.cache_data(ttl=3600)
 def TTS(text):
     try:
         # 고유한 파일 이름 생성
