@@ -74,14 +74,6 @@ def main():
 			st.session_state["audio_file"] = tts.TTS(response)
 			if st.session_state["audio_file"]:
 				audio.play_audio(st.session_state["audio_file"])
-
-				if st.button("다시 듣기"):
-					audio.play_audio(st.session_state["audio_file"])
-				if st.button("파일 삭제"):
-					if os.path.exists(st.session_state["audio_file"]):
-						os.remove(st.session_state["audio_file"])
-					st.session_state["audio_file"] = None
-
 		else:
 			st.session_state["check_reset"] = False
 
