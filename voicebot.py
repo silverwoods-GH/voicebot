@@ -30,7 +30,7 @@ def transcribe_audio(temp_filename):
 			model="whisper-1",
 			file=audio_file
 		)
-	return transcription["text"]
+	return transcription.text
 
 def STT(audio):
 	try:
