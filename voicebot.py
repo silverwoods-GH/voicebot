@@ -1,9 +1,13 @@
 import streamlit as st
+
 import openai
 import os
+
 from audiorecorder import audiorecorder
+
 from datetime import datetime
 import base64
+
 import tempfile
 import uuid
 import logging
@@ -21,33 +25,32 @@ def STT(audio_data):
     try:
         # 고유한 파일 이름 생성
         temp_filename = f"{uuid.uuid4()}.mp3"
-        with open(temp_filename, "wb") as temp_file:
-            temp_file.write(audio_data)
+        speech.export(temp_filename, format="mp3")
 
         # OpenAI API를 사용하여 음성을 텍스트로 변환
         with open(temp_filename, "rb") as audio_file:
             transcription = client.audio.transcriptions.create(
-                model="whisper-1",
-                file=audio_file
-            )
+            model="whisper-1", 
+            file=audio_file
+        )
 
         # 임시 파일 삭제
         os.remove(temp_filename)
-        return transcription["text"]
+        return transcription.text
     except Exception as e:
         logging.error(f"STT 오류 발생: {e}")
-        st.error(f"음성 인식 중 오류가 발생했습니다. 다시 시도해주세요.\n{e}")
+        st.error(f"음성 인식 중 오류가 발생했습니다. 다시 시도해주세요.<br>{e}")
         return ""
 
 @st.cache_data(ttl=3600)
-def ask_gpt(messages, model):
+def ask_gpt(prompt, model):
     try:
         # OpenAI API를 사용하여 GPT 모델로부터 응답 생성
         response = client.chat.completions.create(
-            model=model,
-            messages=messages
-        )
-        return response.choices[0].message["content"]
+            model=model, 
+            messages=prompt
+    )
+    return response.choices[0].message.content
     except Exception as e:
         logging.error(f"GPT 오류 발생: {e}")
         st.error(f"GPT 응답 생성 중 오류가 발생했습니다. 다시 시도해주세요.")
@@ -61,10 +64,10 @@ def TTS(text):
         with client.audio.speech.with_streaming_response.create(
             model="tts-1",
             voice="nova",
-            text=text
+            input=text
         ) as response:
             response.stream_to_file(filename)
-        
+
         with open(filename, "wb") as f:
             f.write(response["audio_content"])
         return filename
