@@ -4,7 +4,6 @@ import os
 from audiorecorder import audiorecorder
 from datetime import datetime
 import base64
-import tempfile
 import uuid
 import logging
 
@@ -16,21 +15,26 @@ api_key = os.getenv('OPENAI_API_KEY')
 if not api_key:
     st.error("OpenAI API 키가 설정되지 않았습니다. 환경 변수를 확인하세요.")
 else:
-    openai.api_key = api_key
+    client = openai.OpenAI(api_key=api_key)
 
 ##### 기능 구현 함수 #####
+
+def save_temp_audio(audio):
+    temp_filename = f"{uuid.uuid4()}.mp3"
+    audio.export(temp_filename, format="mp3")
+    return temp_filename
+
 def transcribe_audio(temp_filename):
     with open(temp_filename, "rb") as audio_file:
-        transcription = openai.Audio.transcriptions.create(
+        transcription = client.audio.transcriptions.create(
             model="whisper-1",
             file=audio_file
         )
-    return transcription["text"]
+    return transcription.text
 
 def STT(audio):
     try:
-        temp_filename = f"{uuid.uuid4()}.mp3"
-        audio.export(temp_filename, format="mp3")
+        temp_filename = save_temp_audio(audio)
         text = transcribe_audio(temp_filename)
         os.remove(temp_filename)
         return text
@@ -41,30 +45,27 @@ def STT(audio):
 
 def ask_gpt(messages, model):
     try:
-        response = openai.ChatCompletion.create(
+        response = client.chat.completions.create(
             model=model,
             messages=messages
         )
-        return response.choices[0].message["content"]
+        return response.choices[0].message.content
     except Exception as e:
         logging.error(f"GPT 오류 발생: {e}")
         st.error(f"GPT 응답 생성 중 오류가 발생했습니다. 다시 시도해주세요.")
         return ""
 
 def synthesize_speech(text):
-    response = openai.Audio.synthesize(
-        model="text-to-speech-001",  # 실제 사용할 TTS 모델로 변경
-        input={"text": text}
-    )
-    temp_filename = f"{uuid.uuid4()}.mp3"
-    with open(temp_filename, "wb") as f:
-        f.write(response["audio_content"])
-    return temp_filename
-
-def TTS(text):
     try:
-        filename = synthesize_speech(text)
-        return filename
+        response = client.audio.speech.create(
+            model="tts-1",
+            voice="nova",
+            input=text
+        )
+        temp_filename = f"{uuid.uuid4()}.mp3"
+        with open(temp_filename, "wb") as f:
+            f.write(response["audio_content"])
+        return temp_filename
     except Exception as e:
         logging.error(f"TTS 오류 발생: {e}")
         st.error(f"텍스트를 음성으로 변환하는 중 오류가 발생했습니다. 다시 시도해주세요.")
@@ -88,13 +89,18 @@ def play_audio(filename):
 def display_chat():
     for sender, time, message in st.session_state["chat"]:
         if sender == "user":
-            st.write(f'<div style="display:flex;align-items:center;"><div style="background-color:#007AFF;color:white;border-radius:12px;padding:8px 12px;margin-right:8px;">{message}</div><div style="font-size:0.8rem;color:gray;">{time}</div></div>', 
-                     unsafe_allow_html=True)
+            st.write(
+                f'<div style="display:flex;align-items:center;"><div style="background-color:#007AFF;color:white;border-radius:12px;padding:8px 12px;margin-right:8px;">{message}</div><div style="font-size:0.8rem;color:gray;">{time}</div></div>', 
+                unsafe_allow_html=True
+            )
         else:
-            st.write(f'<div style="display:flex;align-items:center;justify-content:flex-end;"><div style="background-color:lightgray;border-radius:12px;padding:8px 12px;margin-left:8px;">{message}</div><div style="font-size:0.8rem;color:gray;">{time}</div></div>', 
-                     unsafe_allow_html=True)
+            st.write(
+                f'<div style="display:flex;align-items:center;justify-content:flex-end;"><div style="background-color:lightgray;border-radius:12px;padding:8px 12px;margin-left:8px;">{message}</div><div style="font-size:0.8rem;color:gray;">{time}</div></div>', 
+                unsafe_allow_html=True
+            )
 
 ##### 메인 함수 #####
+
 def main():
     st.set_page_config(page_title="음성 챗봇 프로그램", layout="wide")
     st.header("음성 챗봇 프로그램")
