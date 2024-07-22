@@ -13,7 +13,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 
 # OpenAI API 키 설정하기
 api_key = os.getenv('OPENAI_API_KEY')
-openai.api_key = api_key
+client = openai.OpenAI(api_key=api_key)
 
 ##### 기능 구현 함수 #####
 @st.cache_data(ttl=3600)  # 1시간 동안 캐시 유지
@@ -26,7 +26,7 @@ def STT(audio_data):
 
         # OpenAI API를 사용하여 음성을 텍스트로 변환
         with open(temp_filename, "rb") as audio_file:
-            transcription = openai.Audio.transcribe(
+            transcription = client.audio.transcriptions.create(
                 model="whisper-1",
                 file=audio_file
             )
@@ -43,7 +43,7 @@ def STT(audio_data):
 def ask_gpt(messages, model):
     try:
         # OpenAI API를 사용하여 GPT 모델로부터 응답 생성
-        response = openai.ChatCompletion.create(
+        response = client.chat.completions.create(
             model=model,
             messages=messages
         )
@@ -58,14 +58,15 @@ def TTS(text):
     try:
         # 고유한 파일 이름 생성
         filename = f"{uuid.uuid4()}.mp3"
-        response = openai.Audio.synthesize(
+        with client.audio.speech.with_streaming_response.create(
             model="tts-1",
             voice="nova",
             text=text
-        )
+        ) as response:
+            response.stream_to_file(filename)
+        
         with open(filename, "wb") as f:
             f.write(response["audio_content"])
-
         return filename
     except Exception as e:
         logging.error(f"TTS 오류 발생: {e}")
