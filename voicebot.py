@@ -52,7 +52,7 @@ def ask_gpt(messages, model):
         return response.choices[0].message.content
     except Exception as e:
         logging.error(f"GPT 오류 발생: {e}")
-        st.error(f"GPT 응답 생성 중 오류가 발생했습니다. 다시 시도해주세요.")
+        st.error(f"GPT 응답 생성 중 오류가 발생했습니다. 다시 시도해주세요.<br>{e}")
         return ""
 
 def synthesize_speech(text):
@@ -68,7 +68,7 @@ def synthesize_speech(text):
         return temp_filename
     except Exception as e:
         logging.error(f"TTS 오류 발생: {e}")
-        st.error(f"텍스트를 음성으로 변환하는 중 오류가 발생했습니다. 다시 시도해주세요.")
+        st.error(f"텍스트를 음성으로 변환하는 중 오류가 발생했습니다. 다시 시도해주세요.<br>{e}")
         return ""
 
 def play_audio(filename):
@@ -84,7 +84,7 @@ def play_audio(filename):
             st.markdown(md, unsafe_allow_html=True)
     except Exception as e:
         logging.error(f"오디오 재생 오류 발생: {e}")
-        st.error(f"오디오 재생 중 오류가 발생했습니다. 다시 시도해주세요.")
+        st.error(f"오디오 재생 중 오류가 발생했습니다. 다시 시도해주세요.<br>{e}")
 
 def display_chat():
     for sender, time, message in st.session_state["chat"]:
